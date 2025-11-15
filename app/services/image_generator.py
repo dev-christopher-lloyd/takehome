@@ -3,6 +3,8 @@ from typing import Optional, Protocol
 from dataclasses import dataclass
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
+from google import genai
+from google.genai import types
 
 @dataclass
 class ImageResult:
@@ -13,11 +15,11 @@ class ImageResult:
     seed: Optional[int] = None
 
 class ImageGenerator(Protocol):
-    def generate(self, prompt: str, aspect_ratio: str) -> ImageResult:
+    def generate(self, prompt: str, aspect_ratio: str, seed: int | None = None) -> ImageResult:
         raise NotImplementedError("Subclasses should implement the 'generate' method.")
 
 class DummyImageGenerator:
-    def generate(self, prompt: str, aspect_ratio: str) -> ImageResult:
+    def generate(self, prompt: str, aspect_ratio: str, seed: int | None = None) -> ImageResult:
         # Map aspect ratio string to a basic size
         if aspect_ratio == "1:1":
             size = (1024, 1024)
@@ -52,10 +54,38 @@ class DummyImageGenerator:
         buf.seek(0)
         return ImageResult(content=buf.getvalue(), width=size[0], height=size[1], model_name="dummy")
 
-class GoogleGeminiBananaGenerator:
-    def generate(self, prompt: str, aspect_ratio: str) -> ImageResult:
-        return ImageResult(content=b"", width=0, height=0, model_name="dummy")
+class GoogleGeminiNanoBananaGenerator:
+    def generate(self, prompt: str, aspect_ratio: str, seed: int | None = None) -> ImageResult:
+        client = genai.Client()
+        response = client.models.generate_content(
+            model="gemini-2.5-flash-image",
+            contents=[prompt],
+            config=types.GenerateContentConfig(
+                response_modalities=["Image"],
+                image_config=types.ImageConfig(
+                    aspect_ratio=aspect_ratio,
+                ),
+                seed=seed
+            )
+        )
+        
+        image_parts = [
+            part.inline_data.data # type: ignore
+            for part in response.candidates[0].content.parts # type: ignore
+            if getattr(part, "inline_data", None)
+        ]
+
+        if not image_parts:
+            raise RuntimeError("No image data found in Gemini response.")
+        
+        image_bytes = bytes(image_parts[0]) # type: ignore
+        
+        img = Image.open(BytesIO(image_bytes)) # type: ignore
+        width, height = img.size
+
+        return ImageResult(content=image_bytes, width=width, height=height, model_name="gemini") # type: ignore
 
 # Factory method to return the appropriate image generator.
 def get_image_generator() -> ImageGenerator:
-    return DummyImageGenerator()
+    #return DummyImageGenerator()
+    return GoogleGeminiNanoBananaGenerator()

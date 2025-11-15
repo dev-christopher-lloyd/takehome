@@ -9,3 +9,4 @@ boto3
 pillow
 python-json-logger
 python-dotenv
+google-genai

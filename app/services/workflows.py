@@ -19,35 +19,34 @@ logger = logging.getLogger(__name__)
 # hardcode some requirements here for now
 REQUIRED_ASPECT_RATIOS = ["1:1", "9:16", "16:9"]
 
+# hardcode the seed here for testing
+SEED = 42
+
 @dataclass
 class WorkflowGenerationResult:
     workflow_run_id: int
     assets: List[Asset]
     errors: List[str] | None = None
 
+# hardcode the gemini prompt for now
+# for prompt engineering, build this out
 def _build_prompt(
     brand: Brand,
     campaign: Campaign,
     product: Product,
 ) -> str:
-    """
-    Build a simple prompt that bakes in some brand & campaign context.
-
-    In a more advanced setup you'd use LangChain PromptTemplate, add
-    localized variants, etc.
-    """
     primary = getattr(brand, "primary_color_hex", "#FFFFFF")
     secondary = getattr(brand, "secondary_color_hex", "#000000")
 
+    background_description = "professional ice arena packed with fans"
+
     return (
-        f"Product: {product.name}\n"
-        f"Brand: {brand.name}\n"
-        f"Style: clean, modern, consistent with brand colors {primary}, {secondary}\n"
-        f"Target audience: {campaign.target_audience}\n"
-        f"Region: {campaign.target_region}\n"
-        f"Visual: show the product hero foreground, with subtle background elements "
-        f"suggestive of: {campaign.campaign_message}\n"
-        f"Avoid: overly cluttered design, off-brand colors."
+        f"A high-resolution, studio-lit product photograph of a {product.description} in a {background_description}. "
+        f"Ultra-realistic, clean, modern, consistent with brand colors {primary}, {secondary}. "
+        f"Target audience: {campaign.target_audience}. "
+        f"Region: {campaign.target_region}. "
+        f"Suggestive of: {campaign.campaign_message}. "
+        f"Avoid: overly cluttered design, off-brand colors, showing lights."
     )
 
 # requirements:
@@ -55,7 +54,7 @@ def _build_prompt(
 #       - required aspect ratios hardcoded as REQUIRED_ASPECT_RATIOS above
 def _determine_generation_tasks(
     db: Session,
-    campaign: Campaign,
+    campaign: Campaign
 ) -> List[tuple[Product, str]]:
     tasks: List[tuple[Product, str]] = []
 
@@ -144,7 +143,7 @@ def run_campaign_generation(
                 product.id,
                 ratio,
             )
-            img_result = generator.generate(prompt=prompt, aspect_ratio=ratio)
+            img_result = generator.generate(prompt=prompt, aspect_ratio=ratio, seed=SEED)
 
             # Build S3 key hierarchy for traceability
             safe_ratio = ratio.replace(":", "x")
