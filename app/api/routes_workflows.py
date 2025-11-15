@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.db import SessionLocal
-from app.models.workflow import WorkflowRun
+from app.models.workflow import Workflow
 from app.schemas.workflow import WorkflowResponse
 
 router = APIRouter()
@@ -27,7 +27,7 @@ def list_workflows(
     """
     Return all workflow runs.
     """
-    workflows = db.query(WorkflowRun).all()
+    workflows = db.query(Workflow).all()
     return [workflow for workflow in workflows]
 
 @router.get("/{workflow_id}", response_model=WorkflowResponse)
@@ -38,7 +38,7 @@ def get_workflow(
     """
     Return a single workflow run by its ID.
     """
-    workflow = db.query(WorkflowRun).filter(WorkflowRun.id == workflow_id).first()
+    workflow = db.query(Workflow).filter(Workflow.id == workflow_id).first()
     if not workflow:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

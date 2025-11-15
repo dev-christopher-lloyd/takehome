@@ -2,13 +2,14 @@ from typing import List, Generator
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-
+from concurrent.futures import ThreadPoolExecutor
 from app.core.db import SessionLocal
 from app.models.brand import Brand
 from app.models.campaign import Campaign, CampaignStatus
 from app.models.campaign_product import CampaignProduct
 from app.models.asset import Asset
 from app.models.product import Product
+from app.models.workflow import Workflow, WorkflowStatus
 from app.schemas.campaign import (
     CampaignBrief,
     CampaignResponse,
@@ -21,12 +22,9 @@ from app.services.storage import generate_presigned_url
 from app.services.workflows import run_campaign_generation
 
 router = APIRouter()
+executor = ThreadPoolExecutor(max_workers=10)
 
 def get_db() -> Generator[Session, None, None]:
-    """
-    Simple DB session dependency for this router.
-    Defined here to avoid circular imports with app.main.
-    """
     db = SessionLocal()
     try:
         yield db
@@ -103,30 +101,21 @@ def generate_campaign_assets(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Campaign {campaign_id} not found",
         )
-
-    # Delegate orchestration to the workflow service
-    workflow_result = run_campaign_generation(
-        db=db,
-        campaign_id=campaign_id,
+    
+    # create workflow
+    workflow_run = Workflow(
+        campaign_id=campaign.id,
+        status=WorkflowStatus.STARTED,
     )
+    db.add(workflow_run)
+    db.commit()
+    db.refresh(workflow_run)
 
-    assets_metadata: List[AssetMetadata] = []
-    for asset in workflow_result.assets:
-        s3_url = generate_presigned_url(asset.s3_key)
-        assets_metadata.append(
-            AssetMetadata(
-                id=asset.id,
-                product_id=asset.product_id,
-                aspect_ratio=asset.aspect_ratio,
-                s3_url=s3_url,
-                checks=[],  # optional: populate here or via /assets/{id}
-            )
-        )
+    # Delegate orchestration to the workflow service and start a thread
+    executor.submit(run_campaign_generation, workflow_run.id, campaign_id,)
 
     return GenerateResponse(
-        workflow_run_id=workflow_result.workflow_run_id,
-        assets=assets_metadata,
-        errors=workflow_result.errors,
+        workflow_run_id=workflow_run.id
     )
 
 @router.get("/{campaign_id}", response_model=CampaignDetail)
@@ -134,9 +123,6 @@ def get_campaign(
     campaign_id: int,
     db: Session = Depends(get_db),
 ) -> CampaignDetail:
-    """
-    Fetch a campaign and its associated assets and products.
-    """
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
     if not campaign:
         raise HTTPException(

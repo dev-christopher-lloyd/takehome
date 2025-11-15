@@ -11,13 +11,12 @@ from app.core.db import Base
 
 
 class WorkflowStatus(IntEnum):
-    RUNNING = 1
-    COMPLETE = 2
-    FAILED = 3
-    # You can add more statuses as needed
+    STARTED = 1
+    RUNNING = 2
+    COMPLETE = 3
+    FAILED = 4
 
-
-class WorkflowRun(Base):
+class Workflow(Base):
     __tablename__ = "workflows"
 
     # Columns definition using mapped_column and Mapped
@@ -37,4 +36,4 @@ class WorkflowRun(Base):
         self.status = status
 
     def __repr__(self) -> str:
-        return f"<WorkflowRun(id={self.id}, status={self.status}, started_at={self.started_at})>"
+        return f"<Workflow(id={self.id}, status={self.status}, started_at={self.started_at})>"

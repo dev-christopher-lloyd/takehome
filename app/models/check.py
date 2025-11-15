@@ -60,7 +60,7 @@ class Check(Base):
     )
 
     # Relationships
-    workflow_run = relationship("WorkflowRun", backref="checks")
+    workflow_run = relationship("Workflow", backref="checks")
     asset = relationship("Asset", backref="checks")
 
     # --- Convenience enum accessors ---

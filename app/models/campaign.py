@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from app.models.brand import Brand
     from app.models.asset import Asset
     from app.models.campaign_product import CampaignProduct
-    from app.models.workflow import WorkflowRun
+    from app.models.workflow import Workflow
 
 
 class CampaignStatus(IntEnum):
@@ -102,9 +102,9 @@ class Campaign(Base):
         cascade="all, delete-orphan",
     )
 
-    # one Campaign -> many WorkflowRuns
-    workflows: Mapped[List["WorkflowRun"]] = relationship(
-        "WorkflowRun",
+    # one Campaign -> many Workflows
+    workflows: Mapped[List["Workflow"]] = relationship(
+        "Workflow",
         back_populates="campaign",
         cascade="all, delete-orphan",
     )

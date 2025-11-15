@@ -10,7 +10,7 @@ class WorkflowResponse(BaseModel):
     """
     Standard representation of a workflow run returned by the API.
 
-    This mirrors the core columns on the WorkflowRun SQLAlchemy model.
+    This mirrors the core columns on the Workflow SQLAlchemy model.
     """
 
     id: int

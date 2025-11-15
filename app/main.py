@@ -13,7 +13,6 @@ from .api.routes_brands import router as brands_router
 from .api.routes_workflows import router as workflows_router
 
 def get_db() -> Generator[Session, None, None]:
-    """SQLAlchemy session dependency for FastAPI routes."""
     db = SessionLocal()
     try:
         yield db
