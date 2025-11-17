@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from enum import IntEnum
 from typing import List, TYPE_CHECKING, Optional
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
@@ -14,12 +13,6 @@ if TYPE_CHECKING:
   from app.models.asset import Asset
   from app.models.campaign_product import CampaignProduct
   from app.models.workflow import Workflow
-
-
-class CampaignStatus(IntEnum):
-  DRAFT = 1
-  GENERATED = 2
-  FAILED = 3
 
 
 class Campaign(Base):
@@ -61,12 +54,6 @@ class Campaign(Base):
   localized_campaign_message: Mapped[Optional[str]] = mapped_column(
       Text,
       nullable=True,
-  )
-
-  status: Mapped[int] = mapped_column(
-      Integer,
-      nullable=False,
-      default=CampaignStatus.DRAFT.value,
   )
 
   created_at: Mapped[datetime] = mapped_column(

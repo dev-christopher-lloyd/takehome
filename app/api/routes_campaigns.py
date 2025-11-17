@@ -1,9 +1,9 @@
 from typing import List
 from fastapi.responses import StreamingResponse
 from fastapi import APIRouter, HTTPException, status, BackgroundTasks
-from concurrent.futures import ThreadPoolExecutor
+from sqlalchemy.exc import SQLAlchemyError
 from app.models.brand import Brand
-from app.models.campaign import Campaign, CampaignStatus
+from app.models.campaign import Campaign
 from app.models.campaign_product import CampaignProduct
 from app.models.asset import Asset
 from app.models.product import Product
@@ -22,7 +22,6 @@ from app.services.download import create_zip
 from app.core.db import DbSession
 
 router = APIRouter()
-executor = ThreadPoolExecutor(max_workers=10)
 
 
 @router.post("", response_model=CampaignResponse, status_code=status.HTTP_201_CREATED)
@@ -36,40 +35,45 @@ def create_campaign(
         status_code=status.HTTP_404_BAD_REQUEST,
         detail=f"Brand {payload.brand_id} does not exist",
     )
-
-  # Persist campaign
-  campaign = Campaign(
-      brand_id=payload.brand_id,
-      name=payload.name,
-      target_region=payload.target_region,
-      target_audience=payload.target_audience,
-      campaign_message=payload.campaign_message,
-      status=CampaignStatus.DRAFT.value,
-  )
-  db.add(campaign)
-  db.flush()  # obtain campaign.id
-
-  # Create new products and link them via campaign_products
-  for product_payload in payload.products:
-    new_product = Product(
-        name=product_payload.name,
-        description=product_payload.description,
-        metadata_json=product_payload.metadata_json,
-        # NOTE: 'sku' intentionally not used here
+  
+  # make this a transaction
+  try:
+    # Persist campaign
+    campaign = Campaign(
+        brand_id=payload.brand_id,
+        name=payload.name,
+        target_region=payload.target_region,
+        target_audience=payload.target_audience,
+        campaign_message=payload.campaign_message,
     )
-    db.add(new_product)
-    db.flush()  # obtain new_product.id
+    db.add(campaign)
+    db.flush()
 
-    cp = CampaignProduct(
-        campaign_id=campaign.id,
-        product_id=new_product.id,
-    )
-    db.add(cp)
+    # Create new products and link them via campaign_products
+    for product_payload in payload.products:
+      new_product = Product(
+          name=product_payload.name,
+          description=product_payload.description,
+          metadata_json=product_payload.metadata_json,
+          # NOTE: 'sku' intentionally not used here
+      )
+      db.add(new_product)
+      db.flush()  # obtain new_product.id
 
-  db.commit()
+      cp = CampaignProduct(
+          campaign_id=campaign.id,
+          product_id=new_product.id,
+      )
+      db.add(cp)
+
+      db.commit()
+  except SQLAlchemyError:
+      db.rollback()
+      raise
+
   db.refresh(campaign)
 
-  return CampaignResponse(id=campaign.id, status=CampaignStatus(campaign.status).name)
+  return CampaignResponse(id=campaign.id)
 
 
 @router.post("/{campaign_id}/generate", response_model=GenerateResponse)
@@ -101,6 +105,7 @@ def generate_campaign_assets(
     background_tasks.add_task(run_campaign_generation, workflow_run.id, campaign_id)
 
     return GenerateResponse(workflow_run_id=workflow_run.id)
+
 
 @router.get("/details/{campaign_id}", response_model=CampaignDetail)
 def get_campaign_details(
@@ -157,7 +162,6 @@ def get_campaign_details(
       target_audience=campaign.target_audience,
       campaign_message=campaign.campaign_message,
       localized_campaign_message=campaign.localized_campaign_message,
-      status=CampaignStatus(campaign.status).name,
       assets=asset_items,
       products=product_items,
   )

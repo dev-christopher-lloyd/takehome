@@ -25,7 +25,6 @@ def upgrade():
       sa.Column("target_audience", sa.Text, nullable=True),
       sa.Column("campaign_message", sa.Text, nullable=False),
       sa.Column("localized_campaign_message", sa.Text, nullable=True),
-      sa.Column("status", sa.Integer, nullable=False),
 
       sa.Column(
           "created_at",

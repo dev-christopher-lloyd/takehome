@@ -40,7 +40,6 @@ class CampaignBrief(BaseModel):
 
 class CampaignResponse(BaseModel):
   id: int
-  status: str
 
 
 class GenerateRequest(BaseModel):
@@ -66,6 +65,5 @@ class CampaignDetail(BaseModel):
   target_audience: str
   campaign_message: str
   localized_campaign_message: Optional[str]
-  status: str
   assets: List[AssetMetadata]
   products: List[CampaignProductResponse]
