@@ -40,8 +40,7 @@
     - generate localized caption if needed
     - for each product
       - for each aspect ratio
-        - if existing asset exists, continue
-        - if no asset assets, generate one
+        - generate image if it doesn't exist
 
 ## happy path workflow
 
