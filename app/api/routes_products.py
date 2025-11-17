@@ -1,25 +1,16 @@
-from typing import Generator, List
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from app.core.db import SessionLocal
+from typing import List
+from fastapi import APIRouter, HTTPException, status
 from app.models.product import Product
 from app.schemas.product import ProductCreate, ProductResponse
+from app.core.db import DbSession
 
 router = APIRouter()
-
-
-def get_db() -> Generator[Session, None, None]:
-  db = SessionLocal()
-  try:
-    yield db
-  finally:
-    db.close()
 
 
 @router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 def create_product(
     payload: ProductCreate,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ) -> ProductResponse:
   product = Product(
       name=payload.name,
@@ -42,7 +33,7 @@ def create_product(
 
 @router.get("", response_model=List[ProductResponse])
 def list_products(
-    db: Session = Depends(get_db),
+    db: DbSession,
 ) -> List[ProductResponse]:
   products = db.query(Product).all()
   return [product for product in products]
@@ -51,7 +42,7 @@ def list_products(
 @router.get("/{product_id}", response_model=ProductResponse)
 def get_product(
     product_id: int,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ) -> ProductResponse:
   product = db.query(Product).filter(Product.id == product_id).first()
   if not product:

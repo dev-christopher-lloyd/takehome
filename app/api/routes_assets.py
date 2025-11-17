@@ -1,28 +1,18 @@
-from typing import Any, Dict, List, Generator
 import base64
 import binascii
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from app.core.db import SessionLocal
+from fastapi import APIRouter, HTTPException, status
 from app.models.asset import Asset, AssetSource, AssetType
 from app.schemas.asset import AssetMetadata, AssetUploadRequest
 from app.services.storage import generate_presigned_url, upload_bytes, get_object_key
+from app.core.db import DbSession
 
 router = APIRouter()
-
-
-def get_db() -> Generator[Session, None, None]:
-  db = SessionLocal()
-  try:
-    yield db
-  finally:
-    db.close()
 
 
 @router.post("", response_model=AssetMetadata, status_code=status.HTTP_201_CREATED)
 def upload_asset(
     payload: AssetUploadRequest,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ) -> AssetMetadata:
   base64_str = payload.image_base64
 
@@ -89,7 +79,7 @@ def upload_asset(
 @router.get("/{asset_id}", response_model=AssetMetadata)
 def get_asset(
     asset_id: int,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ) -> AssetMetadata:
   asset: Asset | None = db.query(Asset).filter(Asset.id == asset_id).first()
   if not asset:

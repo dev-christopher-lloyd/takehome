@@ -1,24 +1,15 @@
-from typing import Generator, List
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from app.core.db import SessionLocal
+from typing import List
+from fastapi import APIRouter, HTTPException, status
 from app.models.workflow import Workflow
 from app.schemas.workflow import WorkflowResponse
+from app.core.db import DbSession
 
 router = APIRouter()
 
 
-def get_db() -> Generator[Session, None, None]:
-  db = SessionLocal()
-  try:
-    yield db
-  finally:
-    db.close()
-
-
 @router.get("", response_model=List[WorkflowResponse])
 def list_workflows(
-    db: Session = Depends(get_db),
+    db: DbSession,
 ) -> List[WorkflowResponse]:
   workflows = db.query(Workflow).all()
   return [workflow for workflow in workflows]
@@ -27,7 +18,7 @@ def list_workflows(
 @router.get("/{workflow_id}", response_model=WorkflowResponse)
 def get_workflow(
     workflow_id: int,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ) -> WorkflowResponse:
   workflow = db.query(Workflow).filter(Workflow.id == workflow_id).first()
   if not workflow:

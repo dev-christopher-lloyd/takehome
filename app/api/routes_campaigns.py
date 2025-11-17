@@ -1,9 +1,7 @@
-from typing import List, Generator
+from typing import List
 from fastapi.responses import StreamingResponse
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException, status
 from concurrent.futures import ThreadPoolExecutor
-from app.core.db import SessionLocal
 from app.models.brand import Brand
 from app.models.campaign import Campaign, CampaignStatus
 from app.models.campaign_product import CampaignProduct
@@ -21,23 +19,16 @@ from app.schemas.campaign import (
 from app.services.storage import generate_presigned_url
 from app.services.workflows import run_campaign_generation
 from app.services.download import create_zip
+from app.core.db import DbSession
 
 router = APIRouter()
 executor = ThreadPoolExecutor(max_workers=10)
 
 
-def get_db() -> Generator[Session, None, None]:
-  db = SessionLocal()
-  try:
-    yield db
-  finally:
-    db.close()
-
-
 @router.post("", response_model=CampaignResponse, status_code=status.HTTP_201_CREATED)
 def create_campaign(
     payload: CampaignBrief,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ) -> CampaignResponse:
   brand = db.query(Brand).filter(Brand.id == payload.brand_id).first()
   if not brand:
@@ -84,7 +75,7 @@ def create_campaign(
 @router.post("/{campaign_id}/generate", response_model=GenerateResponse)
 def generate_campaign_assets(
     campaign_id: int,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ) -> GenerateResponse:
   campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
   if not campaign:
@@ -113,7 +104,7 @@ def generate_campaign_assets(
 @router.get("/details/{campaign_id}", response_model=CampaignDetail)
 def get_campaign_details(
     campaign_id: int,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ) -> CampaignDetail:
   campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
   if not campaign:
@@ -172,7 +163,7 @@ def get_campaign_details(
 
 
 @router.get("/download/{campaign_id}")
-def download_campaign(campaign_id: int, db: Session = Depends(get_db),) -> StreamingResponse:
+def download_campaign(campaign_id: int, db: DbSession,) -> StreamingResponse:
   # Ensure the campaign exists
   campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
   if not campaign:
