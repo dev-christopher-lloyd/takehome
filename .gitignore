@@ -1,0 +1,66 @@
+# ---------------------------
+# Python
+# ---------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.pkl
+*.db
+*.sqlite
+*.sqlite3
+
+# Virtual environments
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# ---------------------------
+# Environment Files
+# ---------------------------
+.env
+.env.*          # allow environment variations
+!*.env.example   # keep templates
+
+# ---------------------------
+# VS Code / Devcontainer
+# ---------------------------
+.vscode/settings.json        # project-specific local settings
+.vscode/launch.json          # debugging config if local
+.vscode/*.code-workspace
+.history/
+*.code-workspace
+
+# Devcontainer artifacts
+.devcontainer/backup-*
+.devcontainer/.cache/
+
+# ---------------------------
+# Docker
+# ---------------------------
+# Prevent committing local volume data
+db_data/
+minio_data/
+docker-data/
+*.pid
+
+# Docker build cache
+**/.dockerignore
+
+# ---------------------------
+# Logs
+# ---------------------------
+logs/
+*.log
+*.tmp
+temp/
+tmp/
+
+# ------------
