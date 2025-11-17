@@ -46,14 +46,8 @@ def upgrade():
       "campaigns",
       ["brand_id"],
   )
-  op.create_index(
-      "ix_campaigns_status",
-      "campaigns",
-      ["status"],
-  )
 
 
 def downgrade():
-  op.drop_index("ix_campaigns_status", table_name="campaigns")
   op.drop_index("ix_campaigns_brand_id", table_name="campaigns")
   op.drop_table("campaigns")
