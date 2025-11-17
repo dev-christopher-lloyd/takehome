@@ -1,7 +1,6 @@
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import func
-from sqlalchemy.dialects import postgresql
 
 revision = "2_campaigns_table"
 down_revision = "1_brands_table"
