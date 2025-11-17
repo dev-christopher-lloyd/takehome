@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import IntEnum
-from typing import List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING, Optional
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -58,12 +58,12 @@ class Campaign(Base):
       nullable=False,
   )
 
-  localized_campaign_message: Mapped[str] = mapped_column(
+  localized_campaign_message: Mapped[Optional[str]] = mapped_column(
       Text,
       nullable=True,
   )
 
-  status: Mapped[str] = mapped_column(
+  status: Mapped[int] = mapped_column(
       Integer,
       nullable=False,
       default=CampaignStatus.DRAFT.value,

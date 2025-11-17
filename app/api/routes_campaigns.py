@@ -1,6 +1,6 @@
 from typing import List
 from fastapi.responses import StreamingResponse
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, BackgroundTasks
 from concurrent.futures import ThreadPoolExecutor
 from app.models.brand import Brand
 from app.models.campaign import Campaign, CampaignStatus
@@ -33,7 +33,7 @@ def create_campaign(
   brand = db.query(Brand).filter(Brand.id == payload.brand_id).first()
   if not brand:
     raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
+        status_code=status.HTTP_404_BAD_REQUEST,
         detail=f"Brand {payload.brand_id} does not exist",
     )
 
@@ -75,31 +75,32 @@ def create_campaign(
 @router.post("/{campaign_id}/generate", response_model=GenerateResponse)
 def generate_campaign_assets(
     campaign_id: int,
+    background_tasks: BackgroundTasks,
     db: DbSession,
 ) -> GenerateResponse:
-  campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
-  if not campaign:
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Campaign {campaign_id} not found",
+    campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+    if not campaign:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Campaign {campaign_id} not found",
+        )
+
+    workflow_run = Workflow(
+        campaign_id=campaign.id,
+        status=WorkflowStatus.STARTED,
     )
 
-  # create workflow
-  workflow_run = Workflow(
-      campaign_id=campaign.id,
-      status=WorkflowStatus.STARTED,
-  )
-  db.add(workflow_run)
-  db.commit()
-  db.refresh(workflow_run)
+    try:
+        db.add(workflow_run)
+        db.commit()
+        db.refresh(workflow_run)
+    except Exception:
+        db.rollback()
+        raise
 
-  # Delegate orchestration to the workflow service and start a thread
-  executor.submit(run_campaign_generation, workflow_run.id, campaign_id,)
+    background_tasks.add_task(run_campaign_generation, workflow_run.id, campaign_id)
 
-  return GenerateResponse(
-      workflow_run_id=workflow_run.id
-  )
-
+    return GenerateResponse(workflow_run_id=workflow_run.id)
 
 @router.get("/details/{campaign_id}", response_model=CampaignDetail)
 def get_campaign_details(
