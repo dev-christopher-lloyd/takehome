@@ -10,9 +10,9 @@ router = APIRouter()
 @router.get("", response_model=List[WorkflowResponse])
 def list_workflows(
     db: DbSession,
-) -> List[WorkflowResponse]:
+) -> List[Workflow]:
   workflows = db.query(Workflow).all()
-  return [workflow for workflow in workflows]
+  return workflows
 
 
 @router.get("/{workflow_id}", response_model=WorkflowResponse)
