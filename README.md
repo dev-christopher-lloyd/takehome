@@ -48,6 +48,7 @@
 2. Images should be in .png format
 3. Single point of failure w/ gemini api (occassional 503 server overloaded errors)
 4. No authentication, rate limiting, cacheing, retry mechanisms built into api
+5. No tests
 
 ## happy path workflow
 
@@ -106,7 +107,7 @@ curl --location 'http://localhost:8000/campaigns' \
             }
         }
     ],
-    "target_region": "Global",
+    "target_region": "US",
     "target_audience": "Eco-conscious households and young professionals seeking safe, effective cleaning solutions",
     "campaign_message": "Clean made simple. Refresh your home, refresh your world."
 }'
