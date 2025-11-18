@@ -47,7 +47,7 @@
 1. No existing product image assets
 2. Images should be in .png format
 3. Single point of failure w/ gemini api (occassional 503 server overloaded errors)
-4. No authentication, rate limiting, retry mechanisms built into api
+4. No authentication, rate limiting, cacheing, retry mechanisms built into api
 
 ## happy path workflow
 
